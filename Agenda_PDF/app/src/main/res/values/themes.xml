@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <!-- Base application theme. -->
+    <style name="bitcoinOne" parent="Theme.Design.NoActionBar">
+        <item name="colorPrimaryDark">#003048</item>
+
+    </style>
+
+    <!-- Base application theme. -->
+    <style name="bitcoinTwo" parent="Theme.Design.NoActionBar">
+        <item name="colorPrimaryDark">#bcd5e6</item>
+    </style>
+
+    <style name="bitcoinThree" parent="Theme.Design.Light.NoActionBar">
+        <item name="colorPrimaryDark">#bcd5e6</item>
+    </style>
+</resources>
