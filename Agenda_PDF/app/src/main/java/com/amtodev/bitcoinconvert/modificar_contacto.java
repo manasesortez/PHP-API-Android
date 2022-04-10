@@ -16,20 +16,31 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.amtodev.bitcoinconvert.Clases.ConexionSQLite;
+import com.amtodev.bitcoinconvert.Clases.Configuraciones;
+import com.android.volley.*;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class modificar_contacto extends AppCompatActivity {
-    ConexionSQLite objConexion;
-    final String NOMBRE_BASE_DATOS = "miagenda";
-    EditText nombre, telefono;
+    EditText nombre;
+    EditText telefono;
     Button botonAgregar, botonRegresar, botonEliminar, botonLlamar;
-    int id_contacto;
+    int id_contacto = 0;
+    String nombre_contacto, telefono_contacto;
+
+    Configuraciones objConfiguracion = new Configuraciones();
+    String URL = objConfiguracion.urlWebServices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_modificar_contacto);
 
-        objConexion = new ConexionSQLite(modificar_contacto.this, NOMBRE_BASE_DATOS, null, 1);
         nombre = (EditText) findViewById(R.id.txtNombreCompletoEditar);
         telefono = (EditText) findViewById(R.id.txtTelefonoEditar);
 
@@ -54,12 +65,6 @@ public class modificar_contacto extends AppCompatActivity {
             }
         });
 
-        botonRegresar.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                regresar();
-            }
-        });
         botonAgregar.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
@@ -87,11 +92,39 @@ public class modificar_contacto extends AppCompatActivity {
 
     private void modificar(){
         try{
-            SQLiteDatabase miBaseDatos = objConexion.getWritableDatabase();
-            String comando = "UPDATE contactos SET nombre='"+ nombre.getText() + "'," + "telefono='"+ telefono.getText() + "' WHERE id_contacto= '" + id_contacto + "'";
-            miBaseDatos.execSQL(comando);
-            miBaseDatos.close();
-            Toast.makeText(modificar_contacto.this, "Datos Modificados con Exito", Toast.LENGTH_SHORT).show();
+            ArrayList<String> milista = new ArrayList<String>();
+            RequestQueue objetoPeticio = Volley.newRequestQueue(modificar_contacto.this);
+            StringRequest peticion = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    try {
+                        JSONObject objJSONResultado = new JSONObject(response.toString());
+                        String estado = objJSONResultado.getString("estado");
+                        if(estado.equals("1")){
+                            Toast.makeText(modificar_contacto.this, "Contacto Registrado Con Exito", Toast.LENGTH_SHORT).show();
+                        }else{
+                            Toast.makeText(modificar_contacto.this, "Error" + estado, Toast.LENGTH_SHORT).show();
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            }, new Response.ErrorListener(){
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Toast.makeText(modificar_contacto.this, "error" + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }) {
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    Map<String, String> params = new HashMap<String, String>();
+                    params.put("accion", "modificar");
+                    params.put("id_contacto", String.valueOf(id_contacto));
+                    params.put("nombre", nombre.getText().toString());
+                    params.put("telefono", telefono.getText().toString());
+                    return params;
+                }
+            };
+            objetoPeticio.add(peticion);
         }catch (Exception error){
             Toast.makeText(modificar_contacto.this, "Error: "+ error.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -99,20 +132,40 @@ public class modificar_contacto extends AppCompatActivity {
 
     private void eliminar(){
         try{
-            SQLiteDatabase miBaseDatos = objConexion.getWritableDatabase();
-            String comando = "DELETE FROM contactos WHERE id_contacto='"+ id_contacto + "'";
-            miBaseDatos.execSQL(comando);
-            miBaseDatos.close();
-            Toast.makeText(modificar_contacto.this, "Datos ELiminados con Exito", Toast.LENGTH_SHORT).show();
+            ArrayList<String> milista = new ArrayList<String>();
+            RequestQueue objetoPeticio = Volley.newRequestQueue(modificar_contacto.this);
+            StringRequest peticion = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    try {
+                        JSONObject objJSONResultado = new JSONObject(response.toString());
+                        String estado = objJSONResultado.getString("estado");
+                        if(estado.equals("1")){
+                            Toast.makeText(modificar_contacto.this, "Contacto Eliminado Con Exito", Toast.LENGTH_SHORT).show();
+                        }else{
+                            Toast.makeText(modificar_contacto.this, "Error" + estado, Toast.LENGTH_SHORT).show();
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            }, new Response.ErrorListener(){
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Toast.makeText(modificar_contacto.this, "error" + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }) {
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    Map<String, String> params = new HashMap<String, String>();
+                    params.put("accion", "modificar");
+                    params.put("id_contacto", String.valueOf(id_contacto));
+                    return params;
+                }
+            };
+            objetoPeticio.add(peticion);
         }catch (Exception error){
             Toast.makeText(modificar_contacto.this, "Error: "+ error.getMessage(), Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void regresar(){
-        Intent actividad = new Intent(modificar_contacto.this, Contact.class);
-        startActivity(actividad);
-        modificar_contacto.this.finish();
     }
 
     @Override
@@ -122,27 +175,17 @@ public class modificar_contacto extends AppCompatActivity {
         if (valoresAdicionales == null){
             Toast.makeText(modificar_contacto.this, "Debes enviar el ID de contacto", Toast.LENGTH_SHORT).show();
             id_contacto = 0;
-            regresar();
         }else{
-            id_contacto = valoresAdicionales.getInt("id_contacto");
-            verContacto();
+            id_contacto = Integer.parseInt(valoresAdicionales.getString("id_contacto"));
+            nombre_contacto = valoresAdicionales.getString("nombre");
+            telefono_contacto = valoresAdicionales.getString("telefono");
+            verContact();
         }
     }
 
-    private void verContacto(){
-        try{
-            SQLiteDatabase base = objConexion.getReadableDatabase();
-            String consulta = "SELECT id_contacto,nombre,telefono from contactos " + " WHERE id_contacto ='"+ id_contacto +"'";
-            @SuppressLint("Recycle") Cursor cadaRegistro = base.rawQuery(consulta, null);
-            if (cadaRegistro.moveToFirst()){
-                do{
-                   nombre.setText(cadaRegistro.getString(1));
-                   telefono.setText(cadaRegistro.getString(2));
-                }while(cadaRegistro.moveToNext());
-            }
-        }catch (Exception error){
-            Toast.makeText(modificar_contacto.this, "Error: "+ error.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+    private void verContact(){
+        nombre.setText(nombre_contacto);
+        telefono.setText(telefono_contacto);
     }
 
     public void openDialog(){

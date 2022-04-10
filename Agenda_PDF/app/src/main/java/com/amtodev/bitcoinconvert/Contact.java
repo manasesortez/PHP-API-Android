@@ -84,19 +84,6 @@ public class Contact extends AppCompatActivity {
         objConfiguracion = new Configuraciones();
         objConexion = new ConexionSQLite(Contact.this, objConfiguracion.BD, null, 1);
 
-        botonExportar = findViewById(R.id.btnExportar);
-        botonExportar.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                try{
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        exportarPDF();
-                    }
-                }catch(FileNotFoundException e){
-                    e.printStackTrace();
-                }
-            }
-        });
 
         cajaBusquedaNombre = findViewById(R.id.txtCriterio);
         listaContactos = (ListView) findViewById(R.id.lvContactos);
@@ -199,110 +186,6 @@ public class Contact extends AppCompatActivity {
     }
 
 
-    public void abrirPDF(File archivo, Context contexto){
-        try {
-            String s = String .valueOf(archivo);
-            File arch = new File(s);
-            if (arch.exists()){
-                Uri uri = FileProvider.getUriForFile(contexto, contexto.getApplicationContext().getPackageName() + ".provider", arch);
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(uri, "application/pdf");
-                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                try{
-                    startActivity(intent);
-                }catch(ActivityNotFoundException e){
-                    Toast.makeText(contexto, "Error: "+ e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        }catch(Exception error){
-            Toast.makeText(contexto, "Error: "+error.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public void exportarPDF() throws FileNotFoundException {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String nombreArchivo = "rptUno"+dtf.format(LocalDateTime.now())+".pdf";
-        File archivo = new File(DIRECTORIO_PDFS, nombreArchivo);
-
-        PdfWriter pdfEscrito = new PdfWriter(archivo);
-        PdfDocument pdfDocumento = new PdfDocument(pdfEscrito);
-        Document documento = new Document(pdfDocumento);
-        pdfDocumento.setDefaultPageSize(PageSize.A4);
-
-        //encabezado
-        @SuppressLint("UseCompatLoadingForDrawables")
-        Drawable logo = getDrawable(R.drawable.friends);
-        Bitmap lienzo = ((BitmapDrawable)logo).getBitmap();
-        ByteArrayOutputStream streamArchivo = new ByteArrayOutputStream();
-        lienzo.compress(Bitmap.CompressFormat.PNG, 100, streamArchivo);
-        byte[] datosLienzo = streamArchivo.toByteArray();
-
-        ImageData imgDatos = ImageDataFactory.create(datosLienzo);
-        Image elLogo = new Image(imgDatos);
-        elLogo.setHeight(50);
-        elLogo.setHorizontalAlignment(HorizontalAlignment.CENTER);
-        documento.add(elLogo);
-        documento.add(new Paragraph(""));
-
-        float anchoColumna[] = {50f, 360f, 140f};
-        Table table = new Table(anchoColumna);
-
-        Cell encabezadoTabla1 = new Cell();
-        encabezadoTabla1.setBackgroundColor(ColorConstants.BLACK);
-        encabezadoTabla1.setFontColor(ColorConstants.WHITE);
-        encabezadoTabla1.add(new Paragraph("#"));
-        table.addCell(encabezadoTabla1);
-
-        Cell encabezadoTabla2 = new Cell();
-        encabezadoTabla2.setBackgroundColor(ColorConstants.BLACK);
-        encabezadoTabla2.setFontColor(ColorConstants.WHITE);
-        encabezadoTabla2.add(new Paragraph("NOMBRE"));
-        table.addCell(encabezadoTabla2);
-
-        Cell encabezadoTabla3 = new Cell();
-        encabezadoTabla3.setBackgroundColor(ColorConstants.BLACK);
-        encabezadoTabla3.setFontColor(ColorConstants.WHITE);
-        encabezadoTabla3.add(new Paragraph("TELEFONO"));
-        table.addCell(encabezadoTabla3);
-
-        //conectarse en modo lectura
-        SQLiteDatabase miDB = objConexion.getReadableDatabase();
-        String comando = "SELECT id_contacto, nombre, telefono from contactos" +
-                " WHERE nombre LIKE '%"+ cajaBusquedaNombre.getText().toString()+ "%' " +
-                "OR telefono LIKE '%" + cajaBusquedaNombre.getText().toString()  + "%' ORDER BY nombre ASC";
-        @SuppressLint("Recycle") Cursor cadaFila = miDB.rawQuery(comando, null);
-
-        if(cadaFila.moveToFirst()){
-            do {
-                Cell celda1 = new Cell();
-                celda1.setBackgroundColor(ColorConstants.WHITE);
-                celda1.setFontColor(ColorConstants.BLACK);
-                celda1.add(new Paragraph(cadaFila.getString(0).toString()));
-                table.addCell(celda1);
-
-                Cell celda2 = new Cell();
-                celda2.setBackgroundColor(ColorConstants.WHITE);
-                celda2.setFontColor(ColorConstants.BLACK);
-                celda2.add(new Paragraph(cadaFila.getString(1).toString()));
-                table.addCell(celda2);
-
-                Cell celda3 = new Cell();
-                celda3.setBackgroundColor(ColorConstants.WHITE);
-                celda3.setFontColor(ColorConstants.BLACK);
-                celda3.add(new Paragraph(cadaFila.getString(2).toString()));
-                table.addCell(celda3);
-            }while(cadaFila.moveToNext());
-        }
-
-        //cerrar la base de datos
-        miDB.close();
-        documento.add(table);
-        documento.close();
-        abrirPDF(archivo, Contact.this);
-
-    }
 
     @Override
     public void onStop() {
